@@ -5,6 +5,7 @@ import javax.servlet.http.HttpSession;
 import org.nutz.dao.Cnd;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.util.NutMap;
+import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.adaptor.JsonAdaptor;
 import org.nutz.mvc.annotation.AdaptBy;
 import org.nutz.mvc.annotation.At;
@@ -15,6 +16,7 @@ import org.nutz.mvc.annotation.Param;
 import com.wendal.nutzbook.bean.User;
 import com.wendal.nutzbook.util.AccessToken;
 import com.wendal.nutzbook.util.AccessTokenManager;
+import com.wendal.nutzbook.util.SessionManager;
 
 @IocBean
 @At("/user")
@@ -33,6 +35,9 @@ public class LoginAction extends BaseAction {
     public Object login(@Param("username")String name, @Param("password")String password, HttpSession session) {
         User user = dao.fetch(User.class, Cnd.where("name", "=", name).and("passwd", "=", password));
         
+		HttpSession sessionT = Mvcs.getHttpSession(false);
+
+        
         NutMap map = new NutMap();
         if (user == null) {
         	map.addv("status", 404);
@@ -44,6 +49,13 @@ public class LoginAction extends BaseAction {
         	dataMap.addv("accesstoken",accessToken.getToken());
         	map.addv("data", dataMap);
         }
+        
+        if(SessionManager.getInstance().isLoginOtherDevice(name)){
+        	SessionManager.getInstance().forceLogoutOtherDevice(name);
+        }
+        
+        SessionManager.getInstance().attributeAdd(name, sessionT);
+        
         return map;
     }
 	
